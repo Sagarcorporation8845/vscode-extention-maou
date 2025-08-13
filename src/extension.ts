@@ -1,48 +1,71 @@
 import * as vscode from 'vscode';
+import { MaouViewProvider } from './panels/MaouViewProvider';
+import { GoogleAuth } from './auth/googleAuth';
+import { GeminiClient } from './gemini/client';
+import { MaouController } from './orchestration/controller';
+import { PreviewContentProvider } from './preview/previewProvider';
 
-// This method is called when your extension is activated
-export function activate(context: vscode.ExtensionContext) {
+let statusBarItem: vscode.StatusBarItem | undefined;
 
-    console.log('Congratulations, your extension "maou" is now active!');
+export async function activate(context: vscode.ExtensionContext) {
+  const config = vscode.workspace.getConfiguration('maou');
+  const defaultModel = config.get<string>('model.default', 'gemini-2.5-pro');
+  const autoApplyPlans = config.get<boolean>('autoApplyPlans', false);
 
-    // Register a command that will create our webview panel
-    let disposable = vscode.commands.registerCommand('zenevo.start', () => {
-        // Create and show a new webview panel
-        const panel = vscode.window.createWebviewPanel(
-            'maouChat', // Identifies the type of the webview. Used internally
-            'Maou', // Title of the panel displayed to the user
-            vscode.ViewColumn.Two, // Editor column to show the new webview panel in
-            {} // Webview options. We can leave this empty for now
-        );
+  const googleAuth = new GoogleAuth(context);
+  await googleAuth.initialize();
+  const geminiClient = new GeminiClient(googleAuth, () => getSelectedModel());
+  const previewProvider = new PreviewContentProvider();
+  const controller = new MaouController(context, geminiClient, previewProvider, {
+    autoApplyPlans,
+    defaultModel,
+  });
 
-        // Set the HTML content for the webview
-        panel.webview.html = getWebviewContent();
-    });
+  context.subscriptions.push(
+    vscode.workspace.registerTextDocumentContentProvider(PreviewContentProvider.scheme, previewProvider)
+  );
 
-    context.subscriptions.push(disposable);
+  const viewProvider = new MaouViewProvider(context.extensionUri, controller, googleAuth);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('maou.sidebar', viewProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    })
+  );
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('maou.login', async () => {
+      await googleAuth.login();
+      updateStatusBar(googleAuth);
+      viewProvider.postAuthState();
+    }),
+    vscode.commands.registerCommand('maou.logout', async () => {
+      await googleAuth.logout();
+      updateStatusBar(googleAuth);
+      viewProvider.postAuthState();
+    }),
+    vscode.commands.registerCommand('maou.sendMessage', async () => {
+      viewProvider.focusInput();
+    })
+  );
+
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+  statusBarItem.command = 'maou.sendMessage';
+  context.subscriptions.push(statusBarItem);
+  updateStatusBar(googleAuth);
+
+  function getSelectedModel(): string {
+    return controller.getSelectedModel();
+  }
 }
 
-// A helper function to get the HTML content for our webview
-function getWebviewContent() {
-  return `<!DOCTYPE html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Maou</title>
-  </head>
-  <body>
-      <h1>Welcome to Maou!</h1>
-      <p>Your AI coding partner.</p>
-      <button>Login with Google</button>
-      <hr>
-      <textarea placeholder="Chat with Maou..." rows="4" style="width: 95%;"></textarea>
-      <br>
-      <button>Send</button>
-  </body>
-  </html>`;
+export function deactivate() {
+  // noop
 }
 
-
-// This method is called when your extension is deactivated
-export function deactivate() {}
+function updateStatusBar(auth: GoogleAuth) {
+  if (!statusBarItem) return;
+  const isLoggedIn = auth.isAuthenticatedSync();
+  statusBarItem.text = isLoggedIn ? 'Maou: Ready' : 'Maou: Login Required';
+  statusBarItem.tooltip = isLoggedIn ? 'Maou is ready' : 'Click to open Maou and login';
+  statusBarItem.show();
+}

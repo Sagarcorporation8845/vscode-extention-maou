@@ -1,47 +1,114 @@
 {
   "name": "zenevo",
   "displayName": "Maou",
-  "description": "An AI coding partner powered by Google Gemini",
-  "version": "0.0.1",
+  "publisher": "zenevo",
+  "description": "Maou: Workspace-aware AI agent for VS Code, powered by Google's Gemini 2.5 (Pro/Flash)",
+  "version": "1.0.0",
   "engines": {
-    "vscode": "^1.91.0"
+    "vscode": "^1.90.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
-  "main": "./dist/extension.js",
+  "main": "./out/extension.js",
+  "activationEvents": [
+    "onView:maou.sidebar",
+    "onCommand:maou.login",
+    "onCommand:maou.logout",
+    "onCommand:maou.sendMessage",
+    "onStartupFinished"
+  ],
   "contributes": {
+    "views": {
+      "explorer": [
+        {
+          "id": "maou.sidebar",
+          "name": "Maou"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "zenevo.start",
-        "title": "Maou: Start"
+        "command": "maou.login",
+        "title": "Maou: Login"
+      },
+      {
+        "command": "maou.logout",
+        "title": "Maou: Logout"
+      },
+      {
+        "command": "maou.sendMessage",
+        "title": "Maou: Send Message"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "Maou",
+      "properties": {
+        "maou.google.clientId": {
+          "type": "string",
+          "default": "YOUR_GOOGLE_OAUTH_CLIENT_ID",
+          "description": "Google OAuth Client ID"
+        },
+        "maou.google.clientSecret": {
+          "type": "string",
+          "default": "YOUR_GOOGLE_OAUTH_CLIENT_SECRET",
+          "markdownDescription": "Google OAuth Client Secret (stored securely via VS Code Secrets API)"
+        },
+        "maou.google.authUri": {
+          "type": "string",
+          "default": "https://accounts.google.com/o/oauth2/auth",
+          "description": "OAuth 2.0 Authorization endpoint"
+        },
+        "maou.google.tokenUri": {
+          "type": "string",
+          "default": "https://oauth2.googleapis.com/token",
+          "description": "OAuth 2.0 Token endpoint"
+        },
+        "maou.google.scopes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [
+            "openid",
+            "email",
+            "profile",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/generative-language"
+          ],
+          "description": "OAuth scopes requested for Gemini access"
+        },
+        "maou.model.default": {
+          "type": "string",
+          "enum": [
+            "gemini-2.5-pro",
+            "gemini-2.5-flash"
+          ],
+          "default": "gemini-2.5-pro",
+          "description": "Default Gemini model"
+        },
+        "maou.autoApplyPlans": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically apply AI-generated plans without approval (deletions still confirm)"
+        }
+      }
+    }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "compile-tests": "tsc -p . --outDir out",
-    "watch-tests": "tsc -p . -w --outDir out",
-    "pretest": "npm run compile-tests && npm run compile && npm run lint",
-    "lint": "eslint src",
-    "test": "vscode-test"
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package",
+    "lint": "echo 'No linter configured'"
   },
   "devDependencies": {
-    "@types/vscode": "^1.91.0",
-    "@types/mocha": "^10.0.10",
-    "@types/node": "22.x",
-    "@typescript-eslint/eslint-plugin": "^8.39.0",
-    "@typescript-eslint/parser": "^8.39.0",
-    "eslint": "^9.32.0",
-    "typescript": "^5.9.2",
-    "ts-loader": "^9.5.2",
-    "webpack": "^5.101.0",
-    "webpack-cli": "^6.0.1",
-    "@vscode/test-cli": "^0.0.11",
-    "@vscode/test-electron": "^2.5.2"
+    "@types/node": "^20.14.2",
+    "@types/vscode": "^1.90.0",
+    "typescript": "^5.5.4",
+    "vsce": "^2.15.0",
+    "ts-node": "^10.9.2"
+  },
+  "dependencies": {
+    "@vscode/webview-ui-toolkit": "^1.5.0"
   }
 }

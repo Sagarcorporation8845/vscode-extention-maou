@@ -1,0 +1,20 @@
+:root { --bg: var(--vscode-editor-background); --fg: var(--vscode-foreground); --muted: var(--vscode-descriptionForeground); }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--vscode-font-family, system-ui, sans-serif); }
+.container { height: 100vh; display: grid; grid-template-rows: auto 1fr auto; }
+.header { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--vscode-panel-border); }
+.title { font-weight: 600; }
+.controls { display: flex; gap: 8px; align-items: center; }
+.chat { padding: 12px; overflow: auto; display: flex; flex-direction: column; gap: 10px; }
+.msg { display: flex; }
+.msg.user { justify-content: flex-end; }
+.msg.assistant { justify-content: flex-start; }
+.msg.system { justify-content: center; }
+.bubble { max-width: 80%; padding: 10px 12px; border-radius: 10px; background: var(--vscode-input-background); border: 1px solid var(--vscode-input-border); white-space: pre-wrap; }
+.msg.user .bubble { background: var(--vscode-button-secondaryBackground); }
+.msg.system .bubble { background: transparent; border: none; color: var(--muted); }
+.plan { border: 1px solid var(--vscode-panel-border); border-radius: 8px; padding: 8px; background: var(--vscode-editorWidget-background); }
+.plan pre { max-height: 200px; overflow: auto; }
+.plan-controls { display: flex; gap: 8px; margin-top: 8px; }
+.composer { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; padding: 8px; border-top: 1px solid var(--vscode-panel-border); align-items: end; }
+#input { width: 100%; background: var(--vscode-input-background); color: var(--fg); border: 1px solid var(--vscode-input-border); border-radius: 6px; padding: 8px; resize: vertical; }
